@@ -1,0 +1,102 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<div class="container mt-4">
+    <div class="jumbotron text-center">
+        <h1 class="display-4">WLMS - Water level measuring system</h1>
+        <h4 class="display-4">Denisa Navrátilová, AIK 2</h4>
+        <br />
+        <p class="lead">This web app will help you edit and add new stations, see water levels and get a warning, if levels are too high or too low.</p>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Stations overview</h5>
+                    <p class="card-text">See and edit any river station.</p>
+                    <a href="/stations" class="btn btn-primary">See stations</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">Values overview</h5>
+                    <p class="card-text">See all the river level values.</p>
+                    <a href="/values" class="btn btn-info">See values</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <br />
+    <br />
+    <div class="row mt-5">
+        <div class="col-6">
+            <h3>Latest updates</h3><br />
+            <ul>
+                <li>18th June 2024: System update for faster portal performance.</li>
+                <li>12th May 2024: New and modern charts look.</li>
+                <li>30th April 2024: New hours when support is online: Sun-Sat: 7:30 - 19:00 .</li>
+                <li>15th April 2024: Documentation update.</li>
+            </ul>
+        </div>
+        <div class="col-2"></div>
+        <div class="col-md-4">
+            <h3>Statistics</h3><br />
+            <p>Total values recorded: @Model.TotalValues</p>
+            <p>Total stations registered: @Model.TotalStations</p>
+        </div>
+    </div>
+    <br />
+</div>
+<div class="row mt-5">
+    <div class="col-md-12 text-center">
+        <div style="display: inline-block; max-width: 800px; margin-top: 20px;">
+            <canvas id="dailyChart" width="800" height="400"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        var ctx = document.getElementById('dailyChart').getContext('2d');
+
+        function initializeChart(data, date) {
+            var labels = data.map(s => s.stationName);
+            var averageLevels = data.map(s => s.averageLevel);
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Level on ' + date,
+                        data: averageLevels,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var dailyAverages = @Html.Raw(Json.Serialize(Model.StationDailyAverages));
+            var todayDate = new Date().toISOString().slice(0, 10);
+            initializeChart(dailyAverages, todayDate);
+        });
+    </script>
+}

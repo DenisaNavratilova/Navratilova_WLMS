@@ -1,0 +1,157 @@
+﻿@page "/Values"
+@model pva.Pages.ValuesModel
+
+@{
+    ViewData["Title"] = "Values";
+    var currentDateTime = DateTime.Now;
+    var levelWarning = Model.Values.Any(value =>
+        value.Level >= value.Station.FloodLevel ||
+        value.Level <= value.Station.DroughtLevel);
+
+    var groupedByStation = Model.Values
+        .GroupBy(v => v.StationId);
+
+    var latestValues = groupedByStation
+        .Select(g => g.OrderByDescending(v => v.Timestamp).FirstOrDefault())
+        .ToList();
+
+    var timeoutWarnings = latestValues
+        .Select(v => new
+        {
+            Value = v,
+            IsTimeoutExceeded = v != null &&
+            (currentDateTime - v.Timestamp).TotalMinutes > v.Station.TimeOutinMinutes
+        })
+        .ToDictionary(x => x.Value, x => x.IsTimeoutExceeded);
+
+    var valuesWithTimeoutWarning = Model.Values
+        .Where(v => timeoutWarnings.ContainsKey(v) && timeoutWarnings[v])
+        .ToHashSet();
+}
+
+<h1>Values</h1>
+<br />
+
+@if (levelWarning)
+{
+    <div class="alert alert-danger">
+        <strong>Warning!</strong> One or more values exceed the flood or drought thresholds.
+    </div>
+}
+@if (Model.Values.Any(v => timeoutWarnings.ContainsKey(v) && timeoutWarnings[v]))
+{
+    <div class="alert alert-danger">
+        <strong>Warning!</strong> The last received value for one or more stations is older than the allowed timeout.
+    </div>
+}
+<br />
+
+<div style="max-width: 600px;">
+    <canvas id="myChart" width="600" height="300"></canvas>
+</div>
+<br />
+<br />
+
+<div class="container">
+    <div class="filter-box border p-3 mb-3">
+        <form id="filterForm" method="get" action="/Values">
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group">
+                    <label for="filterDate">Filter by Date</label>
+                    <input type="date" id="filterDate" name="FilterDate" class="form-control" value="@Model.FilterDate?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="form-group">
+                    <label for="filterStationId">Filter by Station</label>
+                    <select id="filterStationId" name="FilterStationId" class="form-control">
+                        <option value="">-- Select Station --</option>
+                        @foreach (var station in Model.Stations)
+                        {
+                            <option value="@station.StationId">@station.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group align-self-end">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </div>
+        </form>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Value ID</th>
+                    <th>Level</th>
+                    <th>Timestamp</th>
+                    <th>Station Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Values == null || !Model.Values.Any())
+                {
+                    <tr>
+                        <td colspan="4">No values found.</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var value in Model.Values)
+                    {
+                        var isRowTimeoutWarning = valuesWithTimeoutWarning.Contains(value);
+
+                        <tr class="@(value.Level >= value.Station.FloodLevel || value.Level <= value.Station.DroughtLevel || isRowTimeoutWarning ? "table-danger" : "")">
+                            <td>@value.ValueId</td>
+                            <td>@Html.Raw(value.Level >= value.Station.FloodLevel || value.Level <= value.Station.DroughtLevel ? $"<strong>{value.Level}</strong>" : value.Level.ToString())</td>
+                            <td>@Html.Raw(isRowTimeoutWarning ? $"<strong>{value.Timestamp}</strong>" : value.Timestamp.ToString())</td>
+                            <td><a href="/stations/Details?id=@value.Station.StationId" class="station-detail-link">@value.Station.Name</a></td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        var ctx = document.getElementById('myChart').getContext('2d');
+
+        function initializeChart(data, filterDate) {
+            var labels = data.map(s => s.stationName);
+            var averageLevels = data.map(s => s.averageLevel);
+
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Level ' + filterDate,
+                        data: averageLevels,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var stationDailyAverages = @Html.Raw(Json.Serialize(Model.StationDailyAverages));
+            var filterDate = "@Model.FilterDate?.ToString("yyyy-MM-dd")" || new Date().toISOString().slice(0, 10);
+            initializeChart(stationDailyAverages, filterDate);
+
+            var filterStationId = "@Model.FilterStationId";
+            var filterSelect = document.getElementById('filterStationId');
+            if (filterStationId) {
+                filterSelect.value = filterStationId;
+            }
+        });
+    </script>
+}

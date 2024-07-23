@@ -1,0 +1,55 @@
+﻿@page
+@model pva.Pages.Stations.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Stations</h1>
+<br />
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Station[0].Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Station[0].FloodLevel)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Station[0].DroughtLevel)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Station[0].TimeOutinMinutes)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Station) {
+        <tr>
+            <td>
+                <a asp-page="./Details" asp-route-id="@item.StationId">
+                    @Html.DisplayFor(modelItem => item.Name)
+                </a>
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.FloodLevel)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DroughtLevel)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.TimeOutinMinutes)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.StationId" id="edit">Edit</a>
+                <a asp-page="./Delete" asp-route-id="@item.StationId" id="delete">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
