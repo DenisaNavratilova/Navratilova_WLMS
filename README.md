@@ -15,14 +15,13 @@ Core Features
 3.	Station Configuration:
 -	Interface to configure and add new river stations.
 -	Define key parameters such as flood level and drought level.
-4.	Warning System:
--	Automatically send email notifications if water levels exceed predefined thresholds for flood or drought conditions.
+
 
 Additional Features
 1.	Timeout Configuration:
 -	Set and manage the timeout duration for station data. If a station fails to report within the timeout period, an alert is triggered.
 2.	Email Notifications:
--	Send email alerts for both flood and drought warnings.
+-	Automatically send email notifications if water levels exceed predefined thresholds for flood or drought conditions.
 -	Configurable recipient email addresses for warning notifications.
 3.	Historical Data Filtering:
 -	Filter and view historical water level records by station.
@@ -31,4 +30,5 @@ Additional Features
 -	Secure API endpoints using tokens or other authentication mechanisms.
 5.	Data Visualization:
 -	Display water level data in graphical formats (e.g., charts) for better understanding and analysis.
+
 
